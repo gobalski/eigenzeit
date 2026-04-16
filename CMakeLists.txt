@@ -10,6 +10,13 @@ add_executable(eigenzeit src/main.c)
 
 pico_enable_stdio_usb(eigenzeit 1)
 pico_add_extra_outputs(eigenzeit)
+target_link_libraries(eigenzeit 
+  pico_stdlib
+  hardware_i2c
+)
 
-target_link_libraries(eigenzeit pico_stdlib)
+option(PROD "Build for production (define PROD)" OFF)
 
+if(PROD)
+  target_compile_definitions(eigenzeit PRIVATE PROD)
+endif()
