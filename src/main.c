@@ -6,10 +6,51 @@
 #include "libpp.h"
 
 static const int DELAY = 800;
+
 static i2c_inst_t *I2C = i2c0;
+
 static const uint8_t FRAM_ADDR = 0x50;
 static const char UPTIME_ADDR[2] = {0x0, 0x0};
 
+static const uint8_t LCD_ADDR = 0x7C;
+static const uint8_t LCD_INIT[] = {
+    0x00, // Control byte: CO = 0 (only data follows), RS = 0 (Instruction write operation)
+    0x34, // Function set DL=1 (8bit Bus), N=0 (1 Line), DH=1 (double height), IS=0 (normal instructions)
+    0x35, // Function set DL=1 (8bit Bus), N=0 (1 Line), DH=1 (double height), IS=1 (extend instructions)
+    0x14, // Internal oscillator / frequency related setting
+    0x78, // Contrast set / related setting 
+    0x5E, // Power/ICON/contrast control related setting 
+    0x6D, // Follower control / power stabilization related setting 
+    0x0C, // Display ON/OFF control: D=1 (Display ON), C=0 (Cursor OFF), B=0 (Cursor Blink OFF)
+    0x01, // Clear display
+    0x06  // Entry mode set I/D=1 (address increases after write), S=0 (no display shift)
+};
+
+static const uint8_t HELLO_WORLD[] = {
+  0x80, // control byte, but another will follow
+  0x02, // return home
+  0x40, // last control byte, RS=1 for writing to DDRAM
+  // NOTE: its ASCII!!
+  0x48, // H
+  0x45, // E
+  0x4C, // L
+  0x4C, // L
+  0x4F, // O
+}
+
+// NOTE: its ASCII!!
+static const uint8_t DIGITS[] = {
+  0x30, // 0
+  0x31, // 1
+  0x32, // 2
+  0x33, // 3
+  0x34, // 4
+  0x35, // 5
+  0x36, // 6
+  0x37, // 7
+  0x38, // 8
+  0x39  // 9
+}
 
 #ifndef PROD
 char flipLED(char state) {
@@ -79,6 +120,15 @@ int64_t readTime() {
 }
 
 int updateLCD(int64_t uptime) {
+  char uptime_str[16];
+  snprintf(buf, sizeof(uptime_str), "%d", uptime);
+  // OPTIONAL: check what bytes need to be uptdated
+  // prepare data byte sequences
+  // send i2c comands
+  return 0;
+}
+
+int initLCD() {
   return 0;
 }
 
@@ -89,17 +139,7 @@ bool dead(int64_t lifetime) {
   return 0;
 }
 
-int main() {
-#ifndef PROD
-  stdio_init_all();
-  gpio_init(25);
-  gpio_set_dir(25, GPIO_OUT);
-  char state = 0;
-#endif
-  int64_t uptime;
-  init_i2c_bus();
-
-#ifndef PROD
+int reset(){
   int ret;
   sleep_ms(4000);
   uptime = 0;
@@ -115,7 +155,21 @@ int main() {
   sleep_ms(200);
   flipLED(1);
   sleep_ms(200);
-  //for(;;) tight_loop_contents();
+  return 0;
+}
+
+int main() {
+#ifndef PROD
+  stdio_init_all();
+  gpio_init(25);
+  gpio_set_dir(25, GPIO_OUT);
+  char state = 0;
+#endif
+  int64_t uptime;
+  init_i2c_bus();
+
+#ifndef PROD
+  reset();
 #endif
 
   int64_t lifetime = readTime();
