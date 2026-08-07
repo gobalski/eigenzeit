@@ -159,18 +159,19 @@ int reset(){
 }
 
 int main() {
+// init dev stuff
 #ifndef PROD
   stdio_init_all();
   gpio_init(25);
   gpio_set_dir(25, GPIO_OUT);
   char state = 0;
-#endif
-  int64_t uptime;
-  init_i2c_bus();
 
-#ifndef PROD
+  // reset eigenzeit in DEV
   reset();
 #endif
+
+  int64_t uptime;
+  init_i2c_bus();
 
   int64_t lifetime = readTime();
   LOG_DEBUG("lifetime: %lld sec\n", lifetime);
