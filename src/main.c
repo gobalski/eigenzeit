@@ -36,7 +36,7 @@ static const uint8_t HELLO_WORLD[] = {
   0x4C, // L
   0x4C, // L
   0x4F, // O
-}
+};
 
 // NOTE: its ASCII!!
 static const uint8_t DIGITS[] = {
@@ -50,7 +50,7 @@ static const uint8_t DIGITS[] = {
   0x37, // 7
   0x38, // 8
   0x39  // 9
-}
+};
 
 #ifndef PROD
 char flipLED(char state) {
@@ -77,7 +77,7 @@ int init_i2c_bus() {
     gpio_set_function(scl_pin, GPIO_FUNC_I2C);
 }
 
-int writeTime(int64_t uptime) {
+int writeTime(uint64_t uptime) {
   uint8_t* uptime_data = (uint8_t*) &uptime;
   uint8_t data[10];
   for (int i=0; i<2; i++){
@@ -100,7 +100,7 @@ int writeTime(int64_t uptime) {
   }
 }
 
-int64_t readTime() {
+uint64_t readTime() {
   int bytes_read;
   uint8_t data[8];
 
@@ -114,14 +114,14 @@ int64_t readTime() {
                data[0],data[1],data[2],data[3],data[4],data[5],data[6],data[7]);
   }
   // prepare output
-  int64_t uptime;
-  for (int i=0; i<8; i++) uptime = (uptime << 8) | data[i-7];
+  // convert from LE to int64t
+  uint64_t uptime = 0;
+  for (int i=0; i<8; i++) uptime = (uptime << 8) | data[7-i];
   return uptime;
 }
 
-int updateLCD(int64_t uptime) {
+int updateLCD(uint64_t uptime) {
   char uptime_str[16];
-  snprintf(buf, sizeof(uptime_str), "%d", uptime);
   // OPTIONAL: check what bytes need to be uptdated
   // prepare data byte sequences
   // send i2c comands
@@ -132,17 +132,10 @@ int initLCD() {
   return 0;
 }
 
-bool dead(int64_t lifetime) {
-  if (lifetime > 0){
-    return 1;
-  }
-  return 0;
-}
-
 int reset(){
   int ret;
   sleep_ms(4000);
-  uptime = 0;
+  uint64_t uptime = 0;
   ret = writeTime(uptime);
   if (ret < 0){
     LOG_DEBUG("reset failed\n");
@@ -170,10 +163,10 @@ int main() {
   reset();
 #endif
 
-  int64_t uptime;
+  uint64_t uptime;
   init_i2c_bus();
 
-  int64_t lifetime = readTime();
+  uint64_t lifetime = readTime();
   LOG_DEBUG("lifetime: %lld sec\n", lifetime);
 
   while (true) {
@@ -182,7 +175,7 @@ int main() {
 #endif
     sleep_ms(DELAY);
 
-    if(dead(lifetime)){
+    if(lifetime > 0){
       LOG_DEBUG("dead\n");
     } else {
       uptime = to_ms_since_boot(get_absolute_time()) / 1000;
